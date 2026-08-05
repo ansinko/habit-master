@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sixty — one habit, one day at a time</title>
+<meta name="description" content="Pick one thing worth doing every day. Mark each one — the path lights up behind you.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{background:#0A0A0A;color:#F3F1ED;font-family:'Inter',system-ui,-apple-system,sans-serif;line-height:1.55}
+a{color:#E8E0CE;text-decoration:none}
+a:hover{color:#F3F1ED}
+input::placeholder,textarea::placeholder{color:rgba(243,241,237,.30)}
+@keyframes bloom{0%{transform:scale(.68)}52%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes todayGlow{0%,100%{box-shadow:inset 0 0 0 1px #E8E0CE,0 0 8px rgba(232,224,206,.14)}50%{box-shadow:inset 0 0 0 1px #E8E0CE,0 0 18px rgba(232,224,206,.32)}}
+@keyframes haloIn{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:none}84%{opacity:1}100%{opacity:0}}
+@keyframes riseIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes pathDrift{from{stroke-dashoffset:0}to{stroke-dashoffset:-1000}}
+@keyframes pathFade{0%,100%{opacity:.28}50%{opacity:.9}}
+
+/* ── hero entrance ──────────────────────────────────────────────
+   The headline performs its own sentence: "One day." settles, a hold,
+   then "Then another." lands and brings the light with it. */
+@keyframes veilLift{from{opacity:.68}to{opacity:0}}
+@keyframes beamSettle{from{transform:scale(1.06)}to{transform:scale(1)}}
+@keyframes quietIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes beatOne{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes beatTwo{
+  0%{opacity:0;transform:translateY(22px);text-shadow:0 0 0 rgba(232,224,206,0)}
+  58%{text-shadow:0 0 44px rgba(232,224,206,.42)}
+  100%{opacity:1;transform:none;text-shadow:0 0 0 rgba(232,224,206,0)}}
+@keyframes eyebrowTick{0%{opacity:1;transform:none}28%{opacity:.3;transform:translateY(-3px)}100%{opacity:1;transform:none}}
+
+body{
+  --ease:cubic-bezier(.32,.72,0,1);
+  --dur-veil:1200ms;--dur-beam:1900ms;--dur-quiet:560ms;--dur-b1:640ms;--dur-b2:760ms;
+  --del-nav:900ms;--del-eyebrow:180ms;--del-b1:340ms;--del-b2:700ms;--del-block:1020ms;
+}
+/* returning to mark a day — the arrival, not the film */
+body.intro-brief{
+  --dur-veil:420ms;--dur-beam:900ms;--dur-quiet:380ms;--dur-b1:400ms;--dur-b2:440ms;
+  --del-nav:120ms;--del-eyebrow:0ms;--del-b1:60ms;--del-b2:170ms;--del-block:240ms;
+}
+body.intro #heroVeil{animation:veilLift var(--dur-veil) var(--ease) both}
+body.intro #heroImg{animation:beamSettle var(--dur-beam) var(--ease) both;will-change:transform}
+body.intro #topNav{animation:quietIn var(--dur-quiet) var(--ease) var(--del-nav) both}
+body.intro #eyebrow{animation:quietIn var(--dur-quiet) var(--ease) var(--del-eyebrow) both}
+body.intro #line1{animation:beatOne var(--dur-b1) var(--ease) var(--del-b1) both}
+body.intro #line2{animation:beatTwo var(--dur-b2) var(--ease) var(--del-b2) both}
+body.intro .hero-pane{animation:quietIn var(--dur-quiet) var(--ease) var(--del-block) both}
+
+/* composer ⇄ commitment: a handoff, not a swap. Exit fast, arrive slower. */
+.hero-pane{transition:opacity 190ms var(--ease),transform 190ms var(--ease)}
+.hero-pane.is-leaving{opacity:0;transform:translateY(6px);pointer-events:none}
+body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both}
+#eyebrow.is-ticking{animation:eyebrowTick 420ms var(--ease) both}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:1ms!important;animation-delay:0ms!important;transition-duration:1ms!important;transition-delay:0ms!important}}
+
+/* hover states — the design's style-hover bindings */
+.btn-primary:hover:not(:disabled){background:#E8E0CE}
+.btn-ghost:hover{background:rgba(243,241,237,.10)}
+.cell:hover{transform:translateY(-1px)}
+.btn-reset:hover{color:rgba(243,241,237,.72)}
+:focus-visible{outline:2px solid #E8E0CE;outline-offset:2px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<nav id="topNav" style="position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)">
+  <div id="navBg" style="position:absolute;inset:0;background:rgba(10,10,10,.72);opacity:0;transition:opacity 260ms cubic-bezier(.32,.72,0,1);pointer-events:none"></div>
+  <div style="position:relative;z-index:2;max-width:940px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:.7rem;font-size:1.125rem;font-weight:500;letter-spacing:-.02em">
+      <svg viewBox="0 0 64 64" width="20" height="20" aria-hidden="true">
+        <defs><clipPath id="mk"><rect x="0" y="0" width="64" height="40"></rect></clipPath></defs>
+        <circle cx="32" cy="30" r="13" fill="#E8E0CE" clip-path="url(#mk)"></circle>
+        <line x1="6" y1="40" x2="58" y2="40" stroke="#E8E0CE" stroke-width="2.5" stroke-linecap="round"></line>
+      </svg>
+      Sixty
+    </div>
+    <div id="navStat" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.75rem;color:#8B8880;letter-spacing:.06em;font-variant-numeric:tabular-nums"></div>
+  </div>
+  <div id="navLine" style="position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(243,241,237,.09);opacity:0;transition:opacity 260ms cubic-bezier(.32,.72,0,1)"></div>
+</nav>
+
+<header style="position:relative;min-height:88vh;overflow:hidden;background:#0A0A0A;display:flex;flex-direction:column;margin-top:-57px">
+  <img id="heroImg" src="assets/hero-beam.webp" alt="A lone runner on a path of light heading toward a distant point" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:66% 46%;transform-origin:66% 46%">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 58% 54% at 48% 44%,rgba(10,10,10,.88) 0%,rgba(10,10,10,.52) 56%,rgba(10,10,10,0) 100%)"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,.35) 0%,rgba(10,10,10,0) 34%,rgba(10,10,10,.86) 100%)"></div>
+  <div id="heroVeil" style="position:absolute;inset:0;background:#0A0A0A;opacity:0;pointer-events:none;z-index:1"></div>
+  <div style="position:relative;z-index:2;flex:1;display:flex;align-items:center">
+    <div style="max-width:940px;margin:0 auto;padding:8rem 2rem 5rem;width:100%">
+      <div style="max-width:min(640px,100%);margin:0 auto;text-align:center">
+
+        <div id="milestone" hidden style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#E8E0CE;margin-bottom:1rem;animation:haloIn 2.6s ease both"></div>
+
+        <div id="eyebrow" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;color:#8B8880"></div>
+        <h1 style="line-height:.88;letter-spacing:-.045em;font-weight:500;font-size:clamp(3rem,8.2vw,6rem);margin-top:1rem">
+          <span id="line1" style="display:block;color:rgba(243,241,237,.4)">One day.</span>
+          <span id="line2" style="display:block;color:#F3F1ED;margin-top:-.12em">Then another.</span>
+        </h1>
+
+        <div id="committed" class="hero-pane" hidden>
+          <div style="margin-top:2.25rem;display:flex;flex-direction:column;align-items:center;gap:.5rem">
+            <span id="habitText" style="font-size:clamp(1.5rem,3.4vw,2.125rem);font-weight:500;color:#F3F1ED;letter-spacing:-.02em;line-height:1.15;text-wrap:balance"></span>
+            <button id="btnEdit" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase;color:#8B8880;background:none;border:0;cursor:pointer;padding:.25rem 0">edit</button>
+          </div>
+          <p id="subCommitted" style="color:rgba(243,241,237,.72);font-size:1.0625rem;margin:1rem auto 0;max-width:34ch;text-wrap:pretty"></p>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;margin-top:2rem">
+            <button id="btnMark" class="btn-primary" style="font-family:'Inter',sans-serif;font-size:.9375rem;font-weight:500;padding:.6rem 1.25rem;border-radius:999px;border:0;cursor:pointer;background:#F3F1ED;color:#0A0A0A;transition:background 160ms cubic-bezier(.32,.72,0,1),opacity 160ms cubic-bezier(.32,.72,0,1)"></button>
+            <button id="btnPlan" class="btn-ghost" style="font-family:'Inter',sans-serif;font-size:.9375rem;font-weight:500;padding:.6rem 1.25rem;border-radius:999px;border:0;cursor:pointer;background:transparent;color:#F3F1ED;box-shadow:inset 0 0 0 1px rgba(243,241,237,.22);transition:background 160ms cubic-bezier(.32,.72,0,1)"></button>
+          </div>
+        </div>
+
+        <div id="onboard" class="hero-pane" hidden>
+          <p id="subOnboard" style="color:rgba(243,241,237,.72);font-size:1.0625rem;margin:2rem auto 0;max-width:38ch;text-wrap:pretty"></p>
+          <div style="max-width:560px;margin:2.25rem auto 0;text-align:left;background:#0A0A0A;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(243,241,237,.09);padding:1.125rem 1.25rem 1rem">
+            <div id="composerLabel" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.14em;text-transform:uppercase;color:#8B8880;margin-bottom:.75rem"></div>
+            <textarea id="habitInput" rows="2" placeholder="Run a mile · Read 20 pages · Lights out by 11" aria-label="Your daily habit" style="width:100%;min-height:3.4rem;background:transparent;border:0;outline:none;resize:none;color:#F3F1ED;font-family:'Inter',sans-serif;font-size:1.0625rem;line-height:1.5;letter-spacing:-.01em;display:block"></textarea>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.5rem;padding-top:.875rem;border-top:1px solid rgba(243,241,237,.09)">
+              <span id="composerHint" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(243,241,237,.34)"></span>
+              <button id="btnBegin" class="btn-primary" style="font-family:'Inter',sans-serif;font-size:.9375rem;font-weight:500;padding:.55rem 1.4rem;border-radius:999px;border:0;cursor:pointer;background:#F3F1ED;color:#0A0A0A;transition:background 160ms cubic-bezier(.32,.72,0,1)"></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</header>
+
+<div style="max-width:940px;margin:0 auto;padding:0 2rem">
+  <section style="margin-top:4.5rem">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:2rem 3rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:.9rem">
+        <span id="statDone" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:clamp(3.75rem,7.4vw,5.75rem);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:.85;color:#F3F1ED;text-shadow:0 0 38px rgba(232,224,206,.30)">00</span>
+        <span id="statGoal" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:1.375rem;font-variant-numeric:tabular-nums;color:#8B8880">/ 66</span>
+      </div>
+      <div style="display:flex;gap:2.75rem;flex-wrap:wrap">
+        <div>
+          <div id="statStreak" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:1.5rem;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1;color:#E8E0CE">00</div>
+          <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.12em;text-transform:uppercase;color:#8B8880;margin-top:.6rem">Streak</div>
+        </div>
+        <div>
+          <div id="statBest" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:1.5rem;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1;color:#E8E0CE">00</div>
+          <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.12em;text-transform:uppercase;color:#8B8880;margin-top:.6rem">Best</div>
+        </div>
+        <div>
+          <div id="statLeft" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:1.5rem;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1;color:#E8E0CE">00</div>
+          <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.12em;text-transform:uppercase;color:#8B8880;margin-top:.6rem">To go</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;padding:.5rem 0">
+      <div style="height:1px;background:rgba(243,241,237,.10);position:relative">
+        <div id="progFill" style="position:absolute;top:0;bottom:0;left:0;width:0%;background:linear-gradient(90deg,rgba(232,224,206,.34),#E8E0CE);box-shadow:0 0 10px rgba(232,224,206,.16);transition:width 520ms cubic-bezier(.32,.72,0,1)"></div>
+        <div id="progDot" style="position:absolute;left:0%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:#E8E0CE;box-shadow:0 0 14px 3px rgba(232,224,206,.45);transition:left 520ms cubic-bezier(.32,.72,0,1)"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:.5rem;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase;color:#8B8880">
+      <span id="progA"></span><span id="progB"></span>
+    </div>
+  </section>
+</div>
+
+<div style="position:relative;overflow:hidden">
+  <div id="pathsLayer" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;color:#E8E0CE;opacity:.55;-webkit-mask-image:linear-gradient(180deg,transparent,#000 16%,#000 84%,transparent);mask-image:linear-gradient(180deg,transparent,#000 16%,#000 84%,transparent)"></div>
+  <div style="max-width:940px;margin:0 auto;padding:0 2rem;position:relative;z-index:2">
+    <section id="sixty" style="padding:4rem 0 1rem">
+      <div id="sixtyLabel" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;color:#8B8880"></div>
+      <div style="position:relative;padding-left:1.75rem;margin-top:2rem">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(243,241,237,.10)"></div>
+        <div id="railLit" style="position:absolute;left:0;top:0;width:1px;height:0%;background:linear-gradient(180deg,#E8E0CE,rgba(243,241,237,.38));box-shadow:0 0 12px 1px rgba(232,224,206,.16);transition:height 520ms cubic-bezier(.32,.72,0,1)"></div>
+        <div id="phases"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div style="position:relative;overflow:hidden;margin:3rem 0 0;-webkit-mask-image:linear-gradient(180deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(180deg,transparent,#000 18%,#000 82%,transparent)">
+  <img src="assets/divider-horizon.webp" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:sepia(.22) saturate(1.15) hue-rotate(-6deg) brightness(1.02)">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 62% 78% at 50% 52%,rgba(10,10,10,.82) 0%,rgba(10,10,10,.5) 58%,rgba(10,10,10,.28) 100%)"></div>
+  <figure style="position:relative;z-index:2;max-width:940px;margin:0 auto;padding:7.5rem 2rem;text-align:center">
+    <blockquote style="margin:0 auto;max-width:30ch;font-size:clamp(1.5rem,3.4vw,2.25rem);font-weight:300;line-height:1.3;letter-spacing:-.015em;color:#F3F1ED;text-wrap:balance">
+      “What is the <span style="font-weight:500;color:#E8E0CE">ONE Thing</span> I can do such that by doing it, everything else will be easier or unnecessary?”
+    </blockquote>
+    <figcaption style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;color:#8B8880;margin-top:1.75rem">Gary Keller · The ONE Thing</figcaption>
+    <div id="bandTag" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,241,237,.72);margin-top:2.5rem"></div>
+  </figure>
+</div>
+
+<div style="max-width:940px;margin:0 auto;padding:0 2rem">
+  <section id="finish" hidden style="text-align:center;padding:4rem 1rem 2rem;border-top:1px solid rgba(243,241,237,.09);animation:riseIn 600ms ease both">
+    <h2 style="line-height:.88;letter-spacing:-.045em;font-weight:500;font-size:clamp(2.5rem,6.8vw,5rem)">
+      <span id="finishA" style="display:block;color:rgba(243,241,237,.4)"></span>
+      <span style="display:block;color:#F3F1ED;margin-top:-.1em;text-shadow:0 0 46px rgba(232,224,206,.35)">Done.</span>
+    </h2>
+    <p id="finishLine" style="color:rgba(243,241,237,.72);margin-top:1.5rem;font-size:1.0625rem"></p>
+    <button class="btn-primary btn-reset-action" style="font-family:'Inter',sans-serif;font-size:.9375rem;font-weight:500;padding:.65rem 1.4rem;border-radius:999px;border:0;cursor:pointer;background:#F3F1ED;color:#0A0A0A;margin-top:1.75rem;transition:background 160ms cubic-bezier(.32,.72,0,1)">Start another</button>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;border-top:1px solid rgba(243,241,237,.09);margin-top:4rem;padding:2rem 0 4rem">
+    <p id="footerNote" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(243,241,237,.22)"></p>
+    <button class="btn-reset btn-reset-action" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;color:#8B8880;background:none;border:0;cursor:pointer;padding:.25rem;transition:color 160ms cubic-bezier(.32,.72,0,1)">Reset</button>
+  </footer>
+</div>
+
+<div id="toast" role="status" aria-live="polite" style="position:fixed;left:50%;bottom:2rem;transform:translate(-50%,calc(100% + 3rem));background:#F3F1ED;color:#0A0A0A;font-size:.875rem;font-weight:500;padding:.5rem 1.125rem;border-radius:999px;z-index:100;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
