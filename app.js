@@ -37,7 +37,7 @@
     stuck: false
   };
 
-  var timers = { just: 0, toast: 0, milestone: 0, pane: 0 };
+  var timers = { just: 0, toast: 0, milestone: 0, pane: 0, veil: 0 };
   var firstRender = true;
   var lastEyebrow = null;
   var cellEls = [];   // index 0 == day 1
@@ -148,6 +148,7 @@
     if (comeback) el.qNote.textContent = 'Yesterday slipped. You came back — that’s the whole game.';
     // undoing a day lives here, so a lit cell can always simply show its quote
     el.qUnmark.hidden = !(isEditable(n) && new Set(state.logged).has(n));
+    clearTimeout(timers.veil);          // cancel a hide already in flight
     el.quoteVeil.hidden = false;
     void el.quoteVeil.offsetWidth;
     el.quoteVeil.style.opacity = '1';
@@ -157,7 +158,8 @@
   function hideQuote() {
     if (el.quoteVeil.hidden) return;
     el.quoteVeil.style.opacity = '0';
-    setTimeout(function () { el.quoteVeil.hidden = true; }, 340);
+    clearTimeout(timers.veil);
+    timers.veil = setTimeout(function () { el.quoteVeil.hidden = true; }, 340);
   }
 
   /* ---------- actions ---------- */
@@ -314,30 +316,30 @@
 
   // kind: 'done' | 'today' | 'open' (yesterday's grace) | 'missed' | 'future'
   function cellStyle(kind, just) {
-    var s = 'aspect-ratio:1;min-height:46px;border:0;cursor:pointer;border-radius:10px;' +
+    var s = 'aspect-ratio:1;min-height:54px;border:0;cursor:pointer;border-radius:12px;' +
       'display:flex;align-items:center;justify-content:center;' +
-      "font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.8125rem;" +
+      "font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.9375rem;" +
       'font-variant-numeric:tabular-nums;letter-spacing:.02em;padding:0;' +
       'transition:background 300ms cubic-bezier(.32,.72,0,1),box-shadow 300ms cubic-bezier(.32,.72,0,1),' +
       'color 300ms cubic-bezier(.32,.72,0,1),transform 200ms cubic-bezier(.32,.72,0,1);';
 
     if (kind === 'done') {
-      s += 'background:rgba(232,224,206,.16);color:#F3F1ED;' +
-        'box-shadow:inset 0 0 0 1px rgba(232,224,206,.32),0 0 14px rgba(232,224,206,.16);';
+      s += 'background:rgba(232,224,206,.22);color:#FFFDF6;font-weight:500;' +
+        'box-shadow:inset 0 0 0 1px rgba(232,224,206,.50),0 0 18px rgba(232,224,206,.22);';
       if (just) s += 'animation:bloom 640ms cubic-bezier(.32,.72,0,1);';
     } else if (kind === 'today') {
-      s += 'background:rgba(232,224,206,.08);color:#E8E0CE;' +
+      s += 'background:rgba(232,224,206,.12);color:#E8E0CE;font-weight:500;' +
         'box-shadow:inset 0 0 0 1px #E8E0CE,0 0 8px rgba(232,224,206,.14);' +
         'animation:todayGlow 2.8s ease-in-out infinite;';
     } else if (kind === 'missed') {
-      s += 'background:rgba(243,241,237,.015);color:rgba(243,241,237,.16);' +
-        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.04);text-decoration:line-through;';
+      s += 'background:rgba(243,241,237,.02);color:rgba(243,241,237,.26);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.07);text-decoration:line-through;';
     } else if (kind === 'future') {
-      s += 'background:rgba(243,241,237,.02);color:rgba(243,241,237,.14);' +
-        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.05);';
+      s += 'background:rgba(243,241,237,.04);color:rgba(243,241,237,.30);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.09);';
     } else { // open — yesterday, still markable
-      s += 'background:rgba(243,241,237,.03);color:rgba(243,241,237,.30);' +
-        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.10);';
+      s += 'background:rgba(243,241,237,.05);color:rgba(243,241,237,.45);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.16);';
     }
     return s;
   }
@@ -372,7 +374,7 @@
       }
 
       var grid = document.createElement('div');
-      grid.setAttribute('style', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:.5rem');
+      grid.setAttribute('style', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:.5rem');
 
       for (var n = from; n <= to; n++) {
         var btn = document.createElement('button');
@@ -413,7 +415,7 @@
     svg.setAttribute('style', 'width:100%;height:100%;display:block');
 
     [1, -1].forEach(function (position) {
-      for (var i = 0; i < 28; i++) {
+      for (var i = 0; i < 28; i += 2) {
         var d = 'M-' + (380 - i * 5 * position) + ' -' + (189 + i * 6) +
           'C-' + (380 - i * 5 * position) + ' -' + (189 + i * 6) +
           ' -' + (312 - i * 5 * position) + ' ' + (216 - i * 6) +
@@ -427,15 +429,29 @@
         path.setAttribute('stroke', 'currentColor');
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-width', String(0.5 + i * 0.04));
+        // drift only — the per-path opacity animation forced a full-area
+        // repaint every frame and dragged the page to ~40fps
         path.setAttribute('style',
-          'stroke-opacity:' + (0.05 + i * 0.009) + ';stroke-dasharray:620 380;' +
-          'animation:pathDrift ' + (20 + i * 0.8) + 's linear infinite, pathFade ' + (11 + i * 0.5) + 's ease-in-out infinite;' +
+          'stroke-opacity:' + (0.06 + i * 0.010) + ';stroke-dasharray:620 380;' +
+          'animation:pathDrift ' + (20 + i * 0.8) + 's linear infinite;' +
           'animation-delay:-' + (i * 0.7) + 's');
         svg.appendChild(path);
       }
     });
 
     el.pathsLayer.appendChild(svg);
+
+    // rasterizing the field costs real frames — only animate it on screen
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        var on = entries[0].isIntersecting;
+        svg.style.animationPlayState = on ? '' : 'paused';
+        Array.prototype.forEach.call(svg.children, function (p) {
+          p.style.animationPlayState = on ? 'running' : 'paused';
+        });
+      }, { rootMargin: '100px' });
+      io.observe(el.pathsLayer);
+    }
   }
 
   /* ---------- render ---------- */
