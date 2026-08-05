@@ -58,6 +58,7 @@
     progFill: $('progFill'), progDot: $('progDot'), progA: $('progA'), progB: $('progB'),
     railLit: $('railLit'), sixtyLabel: $('sixtyLabel'), phases: $('phases'),
     pathsLayer: $('pathsLayer'), bandTag: $('bandTag'),
+    habitPathFill: $('habitPathFill'),
     finish: $('finish'), finishA: $('finishA'), finishLine: $('finishLine'),
     footerNote: $('footerNote'), toast: $('toast'),
     quoteVeil: $('quoteVeil'), qDay: $('qDay'), qText: $('qText'), qAttr: $('qAttr'), qNote: $('qNote'),
@@ -221,6 +222,10 @@
       toast('Removed.');
     } else {
       toast(logged.length >= N ? N + ' for ' + N + '.' : 'Day ' + n + ' marked.');
+      // the beam passes over the habit name
+      el.habitText.classList.remove('habit-flare');
+      void el.habitText.offsetWidth;
+      el.habitText.classList.add('habit-flare');
       var comeback = n > 1 && !set.has(n - 1) && n === todayIndex();
       showQuote(n, comeback);
     }
@@ -497,7 +502,21 @@
 
     syncPanes(hasHabit && !editing, firstRender);
 
-    el.habitText.textContent = '“' + state.habit + '”';
+    // the habit carries the light: dim hanging quote marks, warm lit text
+    if (el.habitText.dataset.habit !== state.habit) {
+      el.habitText.dataset.habit = state.habit;
+      el.habitText.textContent = '';
+      var mark1 = document.createElement('span');
+      mark1.setAttribute('style', 'color:rgba(232,224,206,.42);text-shadow:none');
+      mark1.textContent = '“';
+      var mark2 = document.createElement('span');
+      mark2.setAttribute('style', 'color:rgba(232,224,206,.42);text-shadow:none');
+      mark2.textContent = '”';
+      el.habitText.appendChild(mark1);
+      el.habitText.appendChild(document.createTextNode(state.habit));
+      el.habitText.appendChild(mark2);
+    }
+    el.habitPathFill.style.width = pct + '%';
     el.subCommitted.textContent = ended
       ? 'The ' + N + ' days are up. Take a look at the run, then start another when you’re ready.'
       : N + ' days to make it automatic. Mark each day and the path behind you lights up.';
