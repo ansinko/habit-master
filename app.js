@@ -660,9 +660,47 @@
     }, full ? 2000 : 1150);
   }
 
+  /* ---------- font picker (temporary, for choosing the display face) ---------- */
+
+  function buildFontPicker() {
+    var FONTS = [
+      { key: 'Inter', label: 'Inter' },
+      { key: 'Schibsted Grotesk', label: 'Schibsted' },
+      { key: 'Hanken Grotesk', label: 'Hanken' },
+      { key: 'Manrope', label: 'Manrope' }
+    ];
+    var wrap = $('fontBtns');
+    if (!wrap) return;
+    var saved = '';
+    try { saved = localStorage.getItem('sixty:font') || ''; } catch (e) {}
+
+    function apply(key) {
+      document.documentElement.style.setProperty('--display-font', "'" + key + "'");
+      try { localStorage.setItem('sixty:font', key); } catch (e) {}
+      Array.prototype.forEach.call(wrap.children, function (b) {
+        var active = b.dataset.font === key;
+        b.style.background = active ? '#F3F1ED' : 'transparent';
+        b.style.color = active ? '#0A0A0A' : '#8B8880';
+      });
+    }
+
+    FONTS.forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.font = f.key;
+      b.textContent = f.label;
+      b.setAttribute('style', "font-family:'" + f.key + "',sans-serif;font-size:.75rem;font-weight:500;padding:.3rem .6rem;border-radius:999px;border:0;cursor:pointer;background:transparent;color:#8B8880;transition:background 160ms cubic-bezier(.32,.72,0,1),color 160ms cubic-bezier(.32,.72,0,1)");
+      b.addEventListener('click', function () { apply(f.key); });
+      wrap.appendChild(b);
+    });
+
+    apply(saved && FONTS.some(function (f) { return f.key === saved; }) ? saved : 'Inter');
+  }
+
   load();
   buildPaths();
   buildGrid();
   render();
   startIntro();
+  buildFontPicker();
 })();
