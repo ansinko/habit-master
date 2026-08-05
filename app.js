@@ -1,5 +1,10 @@
-/* Sixty — one habit, N days.
+/* Sixty — one habit, N calendar days.
    Vanilla implementation of the Sixty.dc.html design.
+
+   The challenge is anchored to real days: day 1 is the day you commit,
+   day N ends the run no matter what. A missed day stays missed — the
+   point is to stand back up, not to rewrite the past. Marking a day
+   reveals that day's quote; tapping an already-lit day replays it.
    State lives in localStorage; nothing leaves the device. */
 (function () {
   'use strict';
@@ -20,10 +25,12 @@
     'The hard middle. Keep the chain going.',
     'Halfway. Automatic from here.'
   ];
+  var QUOTES = window.SIXTY_QUOTES || [];
 
   var state = {
     habit: '',
     logged: [],
+    startDay: null,     // 'YYYY-MM-DD' of day 1
     justN: 0,
     milestone: 0,
     editing: false,
@@ -52,8 +59,24 @@
     railLit: $('railLit'), sixtyLabel: $('sixtyLabel'), phases: $('phases'),
     pathsLayer: $('pathsLayer'), bandTag: $('bandTag'),
     finish: $('finish'), finishA: $('finishA'), finishLine: $('finishLine'),
-    footerNote: $('footerNote'), toast: $('toast')
+    footerNote: $('footerNote'), toast: $('toast'),
+    quoteVeil: $('quoteVeil'), qDay: $('qDay'), qText: $('qText'), qAttr: $('qAttr'), qNote: $('qNote')
   };
+
+  /* ---------- calendar ---------- */
+
+  function dayKeyOf(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function todayKey() { return dayKeyOf(new Date()); }
+  function daysBetween(aKey, bKey) {
+    // parse at local noon so DST shifts can't skew the count
+    return Math.round((new Date(bKey + 'T12:00:00') - new Date(aKey + 'T12:00:00')) / 86400000);
+  }
+  function todayIndex() {
+    if (!state.startDay) return 1;
+    return daysBetween(state.startDay, todayKey()) + 1;
+  }
 
   /* ---------- persistence ---------- */
 
@@ -64,12 +87,22 @@
       var s = JSON.parse(raw);
       state.habit = s.habit || '';
       state.logged = Array.isArray(s.logged) ? s.logged : [];
+      state.startDay = s.startDay || null;
+      // Migration from the slot model: anchor the calendar so the next
+      // unlogged slot is today, preserving everything already marked.
+      if (state.habit && !state.startDay) {
+        var maxL = 0;
+        state.logged.forEach(function (x) { if (x > maxL) maxL = x; });
+        var d = new Date(); d.setDate(d.getDate() - maxL);
+        state.startDay = dayKeyOf(d);
+        save();
+      }
     } catch (e) { /* first run, or storage blocked */ }
   }
 
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ habit: state.habit, logged: state.logged }));
+      localStorage.setItem(KEY, JSON.stringify({ habit: state.habit, logged: state.logged, startDay: state.startDay }));
     } catch (e) { /* storage blocked — keep running in memory */ }
   }
 
@@ -93,6 +126,33 @@
     return 'Automatic';
   }
 
+  /* ---------- quote overlay ---------- */
+
+  function quoteFor(n) {
+    if (!QUOTES.length) return null;
+    return QUOTES[(n - 1) % QUOTES.length];
+  }
+
+  function showQuote(n, comeback) {
+    var q = quoteFor(n);
+    if (!q) return;
+    el.qDay.textContent = 'Day ' + String(n).padStart(2, '0') + ' · ' + N;
+    el.qText.textContent = '“' + q.t + '”';
+    el.qAttr.textContent = q.a || 'Gary Keller · The ONE Thing';
+    el.qNote.hidden = !comeback;
+    if (comeback) el.qNote.textContent = 'Yesterday slipped. You came back — that’s the whole game.';
+    el.quoteVeil.hidden = false;
+    void el.quoteVeil.offsetWidth;
+    el.quoteVeil.style.opacity = '1';
+    el.quoteVeil.focus();
+  }
+
+  function hideQuote() {
+    if (el.quoteVeil.hidden) return;
+    el.quoteVeil.style.opacity = '0';
+    setTimeout(function () { el.quoteVeil.hidden = true; }, 340);
+  }
+
   /* ---------- actions ---------- */
 
   function toast(msg) {
@@ -113,6 +173,7 @@
     var wasEditing = state.editing;
     state.habit = v;
     state.editing = false;
+    if (!state.startDay) state.startDay = todayKey();   // day 1 is today
     save();
     render();
     toast(wasEditing ? 'Saved.' : 'Sixty begins.');
@@ -122,6 +183,13 @@
     state.editing = true;
     pendingFocus = true;
     render();
+  }
+
+  // A day can be toggled while it is today or yesterday (one day of grace
+  // for forgotten logging). Older days are history; future days aren't here yet.
+  function isEditable(n) {
+    var t = todayIndex();
+    return t <= N && n >= 1 && n <= N && (n === t || n === t - 1);
   }
 
   function toggle(n) {
@@ -143,7 +211,13 @@
     save();
     render();
 
-    toast(wasDone ? 'Removed.' : (logged.length >= N ? N + ' for ' + N + '.' : 'Marked.'));
+    if (wasDone) {
+      toast('Removed.');
+    } else {
+      toast(logged.length >= N ? N + ' for ' + N + '.' : 'Day ' + n + ' marked.');
+      var comeback = n > 1 && !set.has(n - 1) && n === todayIndex();
+      showQuote(n, comeback);
+    }
 
     clearTimeout(timers.just);
     timers.just = setTimeout(function () { state.justN = 0; render(); }, 720);
@@ -155,10 +229,10 @@
   }
 
   function markToday() {
+    var t = todayIndex();
+    if (t > N) return;
     var set = new Set(state.logged);
-    for (var i = 1; i <= N; i++) {
-      if (!set.has(i)) { toggle(i); return; }
-    }
+    if (!set.has(t)) toggle(t);
   }
 
   function seePlan() {
@@ -171,6 +245,7 @@
   function reset() {
     state.habit = '';
     state.logged = [];
+    state.startDay = null;
     state.editing = false;
     state.justN = 0;
     state.milestone = 0;
@@ -226,7 +301,8 @@
 
   /* ---------- cell painting ---------- */
 
-  function cellStyle(done, today, just) {
+  // kind: 'done' | 'today' | 'open' (yesterday's grace) | 'missed' | 'future'
+  function cellStyle(kind, just) {
     var s = 'aspect-ratio:1;min-height:46px;border:0;cursor:pointer;border-radius:10px;' +
       'display:flex;align-items:center;justify-content:center;' +
       "font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.8125rem;" +
@@ -234,17 +310,23 @@
       'transition:background 300ms cubic-bezier(.32,.72,0,1),box-shadow 300ms cubic-bezier(.32,.72,0,1),' +
       'color 300ms cubic-bezier(.32,.72,0,1),transform 200ms cubic-bezier(.32,.72,0,1);';
 
-    if (done) {
+    if (kind === 'done') {
       s += 'background:rgba(232,224,206,.16);color:#F3F1ED;' +
         'box-shadow:inset 0 0 0 1px rgba(232,224,206,.32),0 0 14px rgba(232,224,206,.16);';
       if (just) s += 'animation:bloom 640ms cubic-bezier(.32,.72,0,1);';
-    } else if (today) {
+    } else if (kind === 'today') {
       s += 'background:rgba(232,224,206,.08);color:#E8E0CE;' +
         'box-shadow:inset 0 0 0 1px #E8E0CE,0 0 8px rgba(232,224,206,.14);' +
         'animation:todayGlow 2.8s ease-in-out infinite;';
-    } else {
-      s += 'background:rgba(243,241,237,.03);color:rgba(243,241,237,.24);' +
-        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.07);';
+    } else if (kind === 'missed') {
+      s += 'background:rgba(243,241,237,.015);color:rgba(243,241,237,.16);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.04);text-decoration:line-through;';
+    } else if (kind === 'future') {
+      s += 'background:rgba(243,241,237,.02);color:rgba(243,241,237,.14);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.05);';
+    } else { // open — yesterday, still markable
+      s += 'background:rgba(243,241,237,.03);color:rgba(243,241,237,.30);' +
+        'box-shadow:inset 0 0 0 1px rgba(243,241,237,.10);';
     }
     return s;
   }
@@ -301,7 +383,12 @@
   }
 
   function onCellClick(e) {
-    toggle(parseInt(e.currentTarget.dataset.day, 10));
+    var n = parseInt(e.currentTarget.dataset.day, 10);
+    var done = new Set(state.logged).has(n);
+    if (isEditable(n)) { toggle(n); return; }
+    if (done) { showQuote(n, false); return; }      // replay a collected quote
+    if (n >= todayIndex()) toast('Not yet — one day at a time.');
+    else toast('Day ' + n + ' slipped. Today is what counts.');
   }
 
   /* ---------- one-time build: the drifting path field ---------- */
@@ -346,17 +433,21 @@
     var set = new Set(state.logged);
     var done = state.logged.filter(function (x) { return x >= 1 && x <= N; }).length;
 
-    var current = N;
-    for (var i = 1; i <= N; i++) { if (!set.has(i)) { current = i; break; } }
-
-    var finished = done >= N;
+    var t = todayIndex();                 // calendar position, may exceed N
+    var ended = state.habit && t > N;     // the run is over, complete or not
+    var current = Math.min(Math.max(t, 1), N);
+    var todayDone = set.has(current) && !ended;
+    var perfect = done >= N;
     var pct = Math.round(done / N * 1000) / 10;
+    var timePct = state.habit ? Math.round(Math.min(t, N) / N * 1000) / 10 : 0;
 
-    var maxL = 0;
-    set.forEach(function (x) { if (x <= N && x > maxL) maxL = x; });
+    // streak: consecutive days ending today (or yesterday, if today is still open)
     var streak = 0;
-    for (var s = maxL; s >= 1; s--) { if (set.has(s)) streak++; else break; }
-
+    if (state.habit) {
+      var from = Math.min(t, N);
+      if (!set.has(from)) from -= 1;
+      for (var s = from; s >= 1; s--) { if (set.has(s)) streak++; else break; }
+    }
     var best = 0, run = 0;
     for (var b = 1; b <= N; b++) { if (set.has(b)) { run++; if (run > best) best = run; } else run = 0; }
 
@@ -384,9 +475,10 @@
     }
 
     // hero
-    var eyebrowText = hasHabit
-      ? 'Day ' + (finished ? N : current) + ' of ' + N + ' · ' + phaseNameFor(finished ? N : current)
-      : N + ' days · one habit';
+    var eyebrowText;
+    if (!hasHabit) eyebrowText = N + ' days · one habit';
+    else if (ended) eyebrowText = 'Complete · ' + done + ' of ' + N;
+    else eyebrowText = 'Day ' + current + ' of ' + N + ' · ' + phaseNameFor(current);
     if (eyebrowText !== lastEyebrow) {
       el.eyebrow.textContent = eyebrowText;
       if (lastEyebrow !== null) {                 // acknowledge, don't announce
@@ -400,13 +492,23 @@
     syncPanes(hasHabit && !editing, firstRender);
 
     el.habitText.textContent = '“' + state.habit + '”';
-    el.subCommitted.textContent = N + ' days to make it automatic. Mark each one — the path lights up behind you.';
+    el.subCommitted.textContent = ended
+      ? 'The ' + N + ' days are over. What you showed up for is yours to keep.'
+      : N + ' days to make it automatic. Mark each one — the path lights up behind you.';
     el.subOnboard.textContent = 'Pick one thing worth doing every day. Commit to all ' + N + '. Watch the path light up behind you.';
 
-    el.btnMark.textContent = finished ? ('All ' + N + ' done') : ('Mark day ' + current + ' done');
-    el.btnMark.disabled = finished;
-    el.btnMark.style.cursor = finished ? 'default' : 'pointer';
-    el.btnMark.style.opacity = finished ? '.34' : '';
+    if (ended) {
+      el.btnMark.textContent = perfect ? ('All ' + N + ' done') : ('Sixty complete');
+      el.btnMark.disabled = true;
+    } else if (todayDone) {
+      el.btnMark.textContent = 'Day ' + current + ' marked';
+      el.btnMark.disabled = true;
+    } else {
+      el.btnMark.textContent = 'Mark day ' + current + ' done';
+      el.btnMark.disabled = false;
+    }
+    el.btnMark.style.cursor = el.btnMark.disabled ? 'default' : 'pointer';
+    el.btnMark.style.opacity = el.btnMark.disabled ? '.34' : '';
     el.btnPlan.textContent = 'See all ' + N;
 
     el.composerLabel.textContent = editing ? 'Change your habit' : 'What will you do every day?';
@@ -418,13 +520,14 @@
     el.statGoal.textContent = '/ ' + N;
     el.statStreak.textContent = String(streak).padStart(2, '0');
     el.statBest.textContent = String(best).padStart(2, '0');
-    el.statLeft.textContent = String(N - done).padStart(2, '0');
+    var left = hasHabit ? Math.max(0, N - Math.min(t, N + 1) + (todayDone || ended ? 0 : 1)) : N;
+    el.statLeft.textContent = String(left).padStart(2, '0');
 
-    // progress
+    // progress — the fill is the light you made; the dot is where you stand in time
     el.progFill.style.width = pct + '%';
-    el.progDot.style.left = pct + '%';
+    el.progDot.style.left = timePct + '%';
     el.progA.textContent = done + ' logged';
-    el.progB.textContent = (N - done) + ' to go';
+    el.progB.textContent = ended ? 'complete' : (hasHabit ? 'day ' + current + ' of ' + N : N + ' to go');
     el.railLit.style.height = pct + '%';
     el.sixtyLabel.textContent = 'The ' + N + ' days';
 
@@ -439,25 +542,41 @@
     // so the today-glow and bloom animations aren't restarted on every render.
     for (var n = 1; n <= N; n++) {
       var isDone = set.has(n);
-      var isToday = (n === current) && !isDone && !finished;
+      var kind;
+      if (isDone) kind = 'done';
+      else if (!hasHabit) kind = 'future';
+      else if (ended) kind = 'missed';
+      else if (n === t) kind = 'today';
+      else if (n === t - 1) kind = 'open';
+      else if (n < t) kind = 'missed';
+      else kind = 'future';
+
       var isJust = n === state.justN;
-      var key = (isDone ? 'd' : '') + (isToday ? 't' : '') + (isJust ? 'j' : '') || '-';
+      var key = kind + (isJust ? '+j' : '');
       if (cellKeys[n] !== key) {
         cellKeys[n] = key;
-        cellEls[n].setAttribute('style', cellStyle(isDone, isToday, isJust));
-        cellEls[n].setAttribute('aria-label', 'Day ' + n + (isDone ? ', done' : ''));
+        cellEls[n].setAttribute('style', cellStyle(kind, isJust));
+        cellEls[n].classList.toggle('cell-inert', kind === 'missed' || kind === 'future');
+        var aria = 'Day ' + n;
+        if (kind === 'done') aria += ', done — tap to read the quote';
+        else if (kind === 'today') aria += ', today';
+        else if (kind === 'open') aria += ', yesterday — still open';
+        else if (kind === 'missed') aria += ', missed';
+        cellEls[n].setAttribute('aria-label', aria);
         cellEls[n].setAttribute('aria-pressed', isDone ? 'true' : 'false');
       }
     }
 
     // band + finish
-    el.bandTag.textContent = finished
-      ? (N + ' for ' + N)
+    el.bandTag.textContent = ended
+      ? (perfect ? (N + ' for ' + N) : (done + ' of ' + N + ' · you kept showing up'))
       : (streak > 1 ? streak + '-day streak · keep going' : 'Keep going');
 
-    el.finish.hidden = !finished;
+    el.finish.hidden = !ended;
     el.finishA.textContent = N + ' days.';
-    el.finishLine.textContent = '“' + state.habit + '” — ' + N + ' for ' + N + '.';
+    el.finishLine.textContent = perfect
+      ? '“' + state.habit + '” — ' + N + ' for ' + N + '.'
+      : '“' + state.habit + '” — you showed up ' + done + ' of ' + N + ' days. Missed days don’t erase the ones you made.';
 
     el.footerNote.textContent = 'Sixty · one habit, ' + N + ' days';
 
@@ -480,10 +599,17 @@
   el.habitInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); begin(); }
   });
+  el.quoteVeil.addEventListener('click', hideQuote);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') hideQuote();
+  });
   window.addEventListener('scroll', function () {
     var stuck = window.scrollY > 24;
     if (stuck !== state.stuck) { state.stuck = stuck; render(); }
   }, { passive: true });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) render();       // catch the midnight rollover
+  });
 
   /* ---------- intro ----------
      The full sequence is for the moment you commit — first visit of the

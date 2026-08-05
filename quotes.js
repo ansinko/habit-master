@@ -1,0 +1,80 @@
+/* Sixty — one quote per day, 66 total.
+   Sourced from "The ONE Thing" (Gary Keller & Jay Papasan) via Goodreads;
+   entries with an `a` are voices the book itself quotes, or supplements
+   chosen for the comeback theme. Ordered to follow the arc of the phases:
+   Starting → Repeating → Sticking → Automatic. */
+window.SIXTY_QUOTES = [
+  /* ── Starting (1–15): focus, the first domino ── */
+  { t: 'Your next step is simple. You are the first domino.' },
+  { t: 'Success is built sequentially. It’s one thing at a time.' },
+  { t: 'Be like a postage stamp — stick to one thing until you get there.', a: 'Josh Billings' },
+  { t: 'If you chase two rabbits, you will not catch either one.', a: 'Russian proverb' },
+  { t: 'Things don’t matter equally — success is found in doing what matters most.' },
+  { t: 'Extraordinary results are directly determined by how narrow you can make your focus.' },
+  { t: 'To do two things at once is to do neither.', a: 'Publilius Syrus' },
+  { t: 'The majority of what you want will come from the minority of what you do.' },
+  { t: 'Achievers always work from a clear sense of priority.' },
+  { t: 'Focus is a matter of deciding what things you’re not going to do.' },
+  { t: 'Do your most important work — your ONE Thing — early, before your willpower is drawn down.' },
+  { t: 'A different result requires doing something different.' },
+  { t: 'Things which matter most must never be at the mercy of things which matter least.', a: 'Johann Wolfgang von Goethe' },
+  { t: 'It is those who concentrate on but one thing at a time who advance in this world.', a: 'Og Mandino' },
+  { t: 'Until my ONE Thing is done — everything else is a distraction.' },
+
+  /* ── Repeating (16–31): discipline becomes habit, falling and standing up ── */
+  { t: 'Success is about doing the right thing, not about doing everything right.' },
+  { t: 'Success is actually a short race — a sprint fueled by discipline just long enough for habit to kick in and take over.' },
+  { t: 'We often say, “I just need more discipline.” Actually, we need the habit of doing it.' },
+  { t: 'People do not decide their futures, they decide their habits and their habits decide their futures.', a: 'F. M. Alexander' },
+  { t: 'It does not matter how slowly you go as long as you do not stop.', a: 'Confucius' },
+  { t: 'Our greatest glory is not in never falling, but in rising every time we fall.', a: 'Confucius' },
+  { t: 'Fall seven times, stand up eight.', a: 'Japanese proverb' },
+  { t: 'It’s hard to beat a person who never gives up.', a: 'Babe Ruth' },
+  { t: 'Success is the sum of small efforts, repeated day in and day out.', a: 'Robert Collier' },
+  { t: 'The road to success is always under construction.', a: 'Lily Tomlin' },
+  { t: 'When you strive for greatness, chaos is guaranteed to show up.' },
+  { t: 'Give each habit enough time. Stick with the discipline long enough for it to become routine.' },
+  { t: 'Motivation is what gets you started. Habit is what keeps you going.', a: 'Jim Ryun' },
+  { t: 'Perseverance is not a long race; it is many short races one after the other.', a: 'Walter Elliot' },
+  { t: 'A river cuts through rock not because of its power, but because of its persistence.', a: 'James N. Watkins' },
+  { t: 'You do the right thing and then you do the next right thing. Over time it adds up.' },
+
+  /* ── Sticking (32–46): mastery, time, protecting the one thing ── */
+  { t: 'When you see someone who has a lot of skills, they developed them over time. The key is over time.' },
+  { t: 'Time on a task, over time, eventually beats talent every time.' },
+  { t: 'Mastery is a path you go down instead of a destination you arrive at.' },
+  { t: 'If the people knew how hard I had to work to gain my mastery, it wouldn’t seem wonderful at all.', a: 'Michelangelo' },
+  { t: 'We are kept from our goal, not by obstacles but by a clear path to a lesser goal.' },
+  { t: 'Saying yes to everyone is the same as saying yes to nothing.' },
+  { t: 'If you don’t make your life about what you say yes to, it will become what you intended to say no to.' },
+  { t: 'Leaving some things undone is a necessary tradeoff for extraordinary results.' },
+  { t: 'Passion leads to time practicing. Time spent translates to skill, and when skill improves, results improve.' },
+  { t: 'Multitasking is merely the opportunity to screw up more than one thing at a time.', a: 'Steve Uzzell' },
+  { t: 'Activity is often unrelated to productivity, and busyness rarely takes care of business.' },
+  { t: 'Knocking out a hundred tasks is a poor substitute for doing even one task that’s meaningful.' },
+  { t: 'The key to success isn’t in all the things we do but in the handful of things we do well.' },
+  { t: 'Productivity isn’t about being a workhorse. It’s about priorities, planning, and fiercely protecting your time.', a: 'Margarita Tartakovsky' },
+  { t: 'You must be single-minded. Drive for the one thing on which you have decided.', a: 'George S. Patton' },
+
+  /* ── Automatic (47–66): identity, purpose, the finish ── */
+  { t: 'Achievers pause just long enough to decide what matters and then allow what matters to drive their day.' },
+  { t: 'First we make our habits, then our habits make us.', a: 'John Dryden' },
+  { t: 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.', a: 'Will Durant' },
+  { t: 'The chains of habit are too weak to be felt until they are too strong to be broken.', a: 'Samuel Johnson' },
+  { t: 'Don’t fear big. Fear mediocrity. Fear waste. Fear the lack of living to your fullest.' },
+  { t: 'Don’t let small thinking cut your life down to size. Think big, aim high, act bold.' },
+  { t: 'The only actions that become springboards to succeeding big are those informed by big thinking.' },
+  { t: 'When you argue for your limitations, you get to keep them.' },
+  { t: 'Extraordinary results happen only when you give the best you have to become the best you can be at your most important work.' },
+  { t: 'Purpose is the straightest path to power and the ultimate source of personal strength.' },
+  { t: 'Life is a question and how we live it is our answer.' },
+  { t: 'When life happens, you can be either the author of your life or the victim of it.' },
+  { t: 'Taking complete ownership of your outcomes is the most powerful thing you can do to drive your success.' },
+  { t: 'Anyone who dreams of an uncommon life discovers there is no choice but to seek an uncommon approach to living it.' },
+  { t: 'How we spend our days is, of course, how we spend our lives.', a: 'Annie Dillard' },
+  { t: 'Don’t count the days, make the days count.', a: 'Muhammad Ali' },
+  { t: 'No one succeeds alone. No one.' },
+  { t: 'The magic never happens in the middle; magic happens at the extremes.' },
+  { t: 'A life worth living might be measured in many ways, but the one that stands above all others is living a life of no regrets.' },
+  { t: 'Habits, on average, take 66 days to form. Once a habit is solidly established, you can build on it — or build another one.' }
+];
