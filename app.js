@@ -60,7 +60,8 @@
     pathsLayer: $('pathsLayer'), bandTag: $('bandTag'),
     finish: $('finish'), finishA: $('finishA'), finishLine: $('finishLine'),
     footerNote: $('footerNote'), toast: $('toast'),
-    quoteVeil: $('quoteVeil'), qDay: $('qDay'), qText: $('qText'), qAttr: $('qAttr'), qNote: $('qNote')
+    quoteVeil: $('quoteVeil'), qDay: $('qDay'), qText: $('qText'), qAttr: $('qAttr'), qNote: $('qNote'),
+    qUnmark: $('qUnmark')
   };
 
   /* ---------- calendar ---------- */
@@ -133,14 +134,19 @@
     return QUOTES[(n - 1) % QUOTES.length];
   }
 
+  var quoteDay = 0;   // day currently shown in the overlay
+
   function showQuote(n, comeback) {
     var q = quoteFor(n);
     if (!q) return;
+    quoteDay = n;
     el.qDay.textContent = 'Day ' + String(n).padStart(2, '0') + ' · ' + N;
     el.qText.textContent = '“' + q.t + '”';
     el.qAttr.textContent = q.a || 'Gary Keller · The ONE Thing';
     el.qNote.hidden = !comeback;
     if (comeback) el.qNote.textContent = 'Yesterday slipped. You came back — that’s the whole game.';
+    // undoing a day lives here, so a lit cell can always simply show its quote
+    el.qUnmark.hidden = !(isEditable(n) && new Set(state.logged).has(n));
     el.quoteVeil.hidden = false;
     void el.quoteVeil.offsetWidth;
     el.quoteVeil.style.opacity = '1';
@@ -231,8 +237,8 @@
   function markToday() {
     var t = todayIndex();
     if (t > N) return;
-    var set = new Set(state.logged);
-    if (!set.has(t)) toggle(t);
+    if (new Set(state.logged).has(t)) showQuote(t, false);   // already marked → read it again
+    else toggle(t);
   }
 
   function seePlan() {
@@ -385,8 +391,8 @@
   function onCellClick(e) {
     var n = parseInt(e.currentTarget.dataset.day, 10);
     var done = new Set(state.logged).has(n);
+    if (done) { showQuote(n, false); return; }      // a lit day always shows its quote
     if (isEditable(n)) { toggle(n); return; }
-    if (done) { showQuote(n, false); return; }      // replay a collected quote
     if (n >= todayIndex()) toast('Not yet — one day at a time.');
     else toast('Day ' + n + ' slipped. Today is what counts.');
   }
@@ -501,8 +507,8 @@
       el.btnMark.textContent = perfect ? ('All ' + N + ' done') : ('Sixty complete');
       el.btnMark.disabled = true;
     } else if (todayDone) {
-      el.btnMark.textContent = 'Day ' + current + ' marked';
-      el.btnMark.disabled = true;
+      el.btnMark.textContent = 'Read today’s quote';
+      el.btnMark.disabled = false;
     } else {
       el.btnMark.textContent = 'Mark day ' + current + ' done';
       el.btnMark.disabled = false;
@@ -600,6 +606,12 @@
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); begin(); }
   });
   el.quoteVeil.addEventListener('click', hideQuote);
+  el.qUnmark.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var n = quoteDay;
+    hideQuote();
+    if (n && isEditable(n) && new Set(state.logged).has(n)) toggle(n);
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') hideQuote();
   });
