@@ -499,9 +499,9 @@
 
     el.habitText.textContent = '“' + state.habit + '”';
     el.subCommitted.textContent = ended
-      ? 'The ' + N + ' days are over. What you showed up for is yours to keep.'
-      : N + ' days to make it automatic. Mark each one — the path lights up behind you.';
-    el.subOnboard.textContent = 'Pick one thing worth doing every day. Commit to all ' + N + '. Watch the path light up behind you.';
+      ? 'The ' + N + ' days are up. Take a look at the run, then start another when you’re ready.'
+      : N + ' days to make it automatic. Mark each day and the path behind you lights up.';
+    el.subOnboard.textContent = 'Pick one thing worth doing every day and commit to it for ' + N + ' days. The path behind you lights up as you go.';
 
     if (ended) {
       el.btnMark.textContent = perfect ? ('All ' + N + ' done') : ('Sixty complete');
