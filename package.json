@@ -1,0 +1,9 @@
+{
+  "name": "habit-master",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@clerk/backend": "^2.0.0",
+    "@neondatabase/serverless": "^1.0.2"
+  }
+}
