@@ -36,6 +36,56 @@ code() { # code <metoda> <cesta> [tokenom?] [telo]
 echo "== auth =="
 check "GET /api/state bez tokenu → 401" 401 "$(code GET /api/state noauth)"
 
+echo "== zalozenie behu =="
+check "POST /api/runs bez tokenu → 401" 401 "$(code POST /api/runs noauth '{"habitName":"beh"}')"
+if [ -n "$TOKEN" ]; then
+  check "POST /api/runs s tokenom → 201" 201 "$(code POST /api/runs auth '{"habitName":"smoke habit"}')"
+  check "POST /api/runs bez habitName → 400" 400 "$(code POST /api/runs auth '{}')"
+fi
+
+echo "== premenovanie behu =="
+if [ -n "$TOKEN" ]; then
+  RUN_ID=$(curl -s -X POST "$BASE/api/runs" -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' -d '{"habitName":"smoke premenovanie"}' \
+    | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  check "PATCH /api/runs/:id → 200" 200 \
+    "$(code PATCH "/api/runs/$RUN_ID" auth '{"habitName":"smoke premenovany"}')"
+  check "PATCH bez habitName → 400" 400 "$(code PATCH "/api/runs/$RUN_ID" auth '{}')"
+  check "PATCH cudzi run_id → 404" 404 \
+    "$(code PATCH "/api/runs/00000000-0000-0000-0000-000000000000" auth '{"habitName":"x"}')"
+fi
+
+echo "== oznacovanie dni =="
+if [ -n "$TOKEN" ]; then
+  RUN_ID=$(curl -s -X POST "$BASE/api/runs" -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' -d '{"habitName":"smoke dni"}' \
+    | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  TODAY=$(date +%F)
+  check "oznacenie dna → 200" 200 \
+    "$(code POST "/api/runs/$RUN_ID/days" auth '{"date":"'"$TODAY"'","done":true}')"
+  check "opakovane oznacenie → 200 (idempotencia)" 200 \
+    "$(code POST "/api/runs/$RUN_ID/days" auth '{"date":"'"$TODAY"'","done":true}')"
+  check "odznacenie → 200" 200 \
+    "$(code POST "/api/runs/$RUN_ID/days" auth '{"date":"'"$TODAY"'","done":false}')"
+  check "datum v buducnosti → 400" 400 \
+    "$(code POST "/api/runs/$RUN_ID/days" auth '{"date":"2099-01-01","done":true}')"
+  check "datum mimo okna behu → 400" 400 \
+    "$(code POST "/api/runs/$RUN_ID/days" auth '{"date":"2020-01-01","done":true}')"
+  check "cudzi run_id → 404" 404 \
+    "$(code POST "/api/runs/00000000-0000-0000-0000-000000000000/days" auth '{"date":"'"$TODAY"'","done":true}')"
+fi
+
+echo "== historia =="
+check "GET /api/runs bez tokenu → 401" 401 "$(code GET /api/runs noauth)"
+if [ -n "$TOKEN" ]; then
+  check "GET /api/runs s tokenom → 200" 200 "$(code GET /api/runs auth)"
+  body=$(curl -s "$BASE/api/runs" -H "Authorization: Bearer $TOKEN")
+  case "$body" in
+    *'"days_done"'*) echo "  ok   historia obsahuje days_done" ;;
+    *) echo "  FAIL historia neobsahuje days_done: $body"; fails=$((fails + 1)) ;;
+  esac
+fi
+
 echo
 if [ "$fails" -gt 0 ]; then echo "$fails zlyhani"; exit 1; fi
 echo "vsetko ok"

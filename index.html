@@ -84,6 +84,17 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 .btn-reset:hover{color:rgba(243,241,237,.72)}
 :focus-visible{outline:2px solid #E8E0CE;outline-offset:2px}
 [hidden]{display:none!important}
+
+/* história behov */
+#history{max-width:46rem;margin:0 auto;padding:4rem 1.5rem 6rem}
+.hist-head{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(243,241,237,.45);margin-bottom:1.5rem}
+.hist-row{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;padding:1rem 0;border-bottom:1px solid rgba(243,241,237,.08)}
+.hist-name{font-size:1rem;font-weight:500}
+.hist-meta{font-size:.8125rem;color:rgba(243,241,237,.45);margin-top:.125rem}
+.hist-score{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;white-space:nowrap}
+.hist-count{display:block;font-size:.9375rem}
+.hist-pct{display:block;font-size:.75rem;color:rgba(243,241,237,.45)}
+.hist-empty{font-size:.875rem;color:rgba(243,241,237,.45)}
 </style>
 </head>
 <body>
@@ -92,10 +103,45 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
   <div id="signIn"></div>
 </div>
 <script type="module">
-  import { initAuth, mountSignIn } from './auth.js';
+  import { initAuth, mountSignIn, getToken, signOut } from './auth.js';
+  import * as store from './store.js';
+
+  const gate = document.getElementById('authGate');
+  const appRoot = document.getElementById('appRoot');
+
+  function openApp() {
+    // Brána padá — appka sa zároveň vracia do tab-orderu.
+    appRoot.removeAttribute('inert');
+    appRoot.removeAttribute('aria-hidden');
+    gate.remove();
+  }
+
   initAuth()
-    .then(() => {
-      mountSignIn(document.getElementById('signIn'));
+    .then(async (signedIn) => {
+      if (!signedIn) {
+        mountSignIn(document.getElementById('signIn'));
+        return;
+      }
+
+      // Beh z čias, keď appka žila len v localStorage, sa ponúkne preniesť —
+      // raz, a len keď na serveri ešte nič nie je.
+      if (store.hasLegacy()) {
+        const current = await store.loadState().catch(() => null);
+        if (!current) {
+          if (confirm('Našiel sa rozbehnutý habit z tohto zariadenia. Preniesť ho do účtu?')) {
+            await store.importLegacy().catch((err) => console.error('Import zlyhal:', err));
+          } else {
+            store.dropLegacy();
+          }
+        }
+      }
+
+      openApp();
+      window.HM = { store, getToken, signOut };
+      await import('./app.js');
+
+      const { renderHistory } = await import('./history.js');
+      await renderHistory(document.getElementById('historyList'));
     })
     .catch((err) => {
       console.error('Auth init failed:', err);
@@ -264,9 +310,13 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 
 <div id="toast" role="status" aria-live="polite" style="position:fixed;left:50%;bottom:2rem;transform:translate(-50%,calc(100% + 3rem));background:#F3F1ED;color:#0A0A0A;font-size:.875rem;font-weight:500;padding:.5rem 1.125rem;border-radius:999px;z-index:100;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>
 
+<section id="history">
+  <h2 class="hist-head">Predošlé behy</h2>
+  <div id="historyList"></div>
+</section>
+
 </div>
 
 <script src="quotes.js"></script>
-<script src="app.js"></script>
 </body>
 </html>
