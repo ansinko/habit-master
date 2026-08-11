@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Smoke test proti nasadenej URL.
-#   BASE=https://... TOKEN=<clerk session token> ./scripts/smoke.sh
+# Smoke test. Spúšťaj proti lokálnemu `vercel dev` (preview URL má zapnutú
+# Deployment Protection, tam sa netestuje):
+#   vercel dev
+#   BASE=http://localhost:3000 TOKEN=<clerk session token> ./scripts/smoke.sh
 # TOKEN sa získa v prehliadači: await window.Clerk.session.getToken()
 set -uo pipefail
 
