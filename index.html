@@ -8,6 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_c3VwZXItbWF5Zmx5LTM1LmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -77,10 +84,73 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 .btn-reset:hover{color:rgba(243,241,237,.72)}
 :focus-visible{outline:2px solid #E8E0CE;outline-offset:2px}
 [hidden]{display:none!important}
+
+/* história behov */
+#history{max-width:46rem;margin:0 auto;padding:4rem 1.5rem 6rem}
+.hist-head{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(243,241,237,.45);margin-bottom:1.5rem}
+.hist-row{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;padding:1rem 0;border-bottom:1px solid rgba(243,241,237,.08)}
+.hist-name{font-size:1rem;font-weight:500}
+.hist-meta{font-size:.8125rem;color:rgba(243,241,237,.45);margin-top:.125rem}
+.hist-score{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;white-space:nowrap}
+.hist-count{display:block;font-size:.9375rem}
+.hist-pct{display:block;font-size:.75rem;color:rgba(243,241,237,.45)}
+.hist-empty{font-size:.875rem;color:rgba(243,241,237,.45)}
 </style>
 </head>
 <body>
 
+<div id="authGate" style="position:fixed;inset:0;z-index:200;background:#0A0A0A;display:flex;align-items:center;justify-content:center">
+  <div id="signIn"></div>
+</div>
+<script type="module">
+  import { initAuth, mountSignIn, getToken, signOut } from './auth.js';
+  import * as store from './store.js';
+
+  const gate = document.getElementById('authGate');
+  const appRoot = document.getElementById('appRoot');
+
+  function openApp() {
+    // Brána padá — appka sa zároveň vracia do tab-orderu.
+    appRoot.removeAttribute('inert');
+    appRoot.removeAttribute('aria-hidden');
+    gate.remove();
+  }
+
+  initAuth()
+    .then(async (signedIn) => {
+      if (!signedIn) {
+        mountSignIn(document.getElementById('signIn'));
+        return;
+      }
+
+      // Beh z čias, keď appka žila len v localStorage, sa ponúkne preniesť —
+      // raz, a len keď na serveri ešte nič nie je.
+      if (store.hasLegacy()) {
+        const current = await store.loadState().catch(() => null);
+        if (!current) {
+          if (confirm('Našiel sa rozbehnutý habit z tohto zariadenia. Preniesť ho do účtu?')) {
+            await store.importLegacy().catch((err) => console.error('Import zlyhal:', err));
+          } else {
+            store.dropLegacy();
+          }
+        }
+      }
+
+      openApp();
+      window.HM = { store, getToken, signOut };
+      await import('./app.js');
+
+      const { renderHistory } = await import('./history.js');
+      await renderHistory(document.getElementById('historyList'));
+    })
+    .catch((err) => {
+      console.error('Auth init failed:', err);
+      document.getElementById('signIn').innerHTML =
+        '<p style="color:#F3F1ED;font-family:\'Schibsted Grotesk\',system-ui,-apple-system,sans-serif;max-width:22rem;text-align:center;line-height:1.5;margin:0">Prihlásenie sa nepodarilo načítať. Skontroluj internetové pripojenie a obnov stránku.</p>';
+    });
+</script>
+
+<div id="appRoot" inert aria-hidden="true">
 <nav id="topNav" style="position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)">
   <div id="navBg" style="position:absolute;inset:0;background:rgba(10,10,10,.72);opacity:0;transition:opacity 260ms cubic-bezier(.32,.72,0,1);pointer-events:none"></div>
   <div style="position:relative;z-index:2;max-width:940px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between">
@@ -240,7 +310,13 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 
 <div id="toast" role="status" aria-live="polite" style="position:fixed;left:50%;bottom:2rem;transform:translate(-50%,calc(100% + 3rem));background:#F3F1ED;color:#0A0A0A;font-size:.875rem;font-weight:500;padding:.5rem 1.125rem;border-radius:999px;z-index:100;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>
 
+<section id="history">
+  <h2 class="hist-head">Predošlé behy</h2>
+  <div id="historyList"></div>
+</section>
+
+</div>
+
 <script src="quotes.js"></script>
-<script src="app.js"></script>
 </body>
 </html>

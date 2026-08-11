@@ -5,7 +5,8 @@
    day N ends the run no matter what. A missed day stays missed — the
    point is to stand back up, not to rewrite the past. Marking a day
    reveals that day's quote; tapping an already-lit day replays it.
-   State lives in localStorage; nothing leaves the device. */
+   Stav žije na serveri (Vercel Functions + Neon), localStorage je už len
+   cache posledného známeho stavu pre okamžité vykreslenie. */
 (function () {
   'use strict';
 
@@ -16,7 +17,6 @@
     milestonesOn: true
   };
 
-  var KEY = 'sixty:v2';
   var N = Math.max(14, Math.min(120, isNaN(parseInt(CONFIG.goalDays, 10)) ? 66 : parseInt(CONFIG.goalDays, 10)));
 
   var PHASE_LABELS = ['Starting', 'Repeating', 'Sticking', 'Automatic'];
@@ -28,6 +28,7 @@
   var QUOTES = window.SIXTY_QUOTES || [];
 
   var state = {
+    runId: null,        // id behu na serveri
     habit: '',
     logged: [],
     startDay: null,     // 'YYYY-MM-DD' of day 1
@@ -82,30 +83,36 @@
 
   /* ---------- persistence ---------- */
 
+  function applyState(s) {
+    state.runId = s ? s.runId : null;
+    state.habit = s ? s.habit : '';
+    state.startDay = s ? s.startDay : null;
+    state.logged = s && Array.isArray(s.logged) ? s.logged.slice() : [];
+  }
+
+  // Zdrojom pravdy je server. localStorage tu už nie je databáza, len cache
+  // posledného známeho stavu, aby appka na mobile nabehla okamžite.
   function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (!raw) return;
-      var s = JSON.parse(raw);
-      state.habit = s.habit || '';
-      state.logged = Array.isArray(s.logged) ? s.logged : [];
-      state.startDay = s.startDay || null;
-      // Migration from the slot model: anchor the calendar so the next
-      // unlogged slot is today, preserving everything already marked.
-      if (state.habit && !state.startDay) {
-        var maxL = 0;
-        state.logged.forEach(function (x) { if (x > maxL) maxL = x; });
-        var d = new Date(); d.setDate(d.getDate() - maxL);
-        state.startDay = dayKeyOf(d);
-        save();
-      }
-    } catch (e) { /* first run, or storage blocked */ }
+    applyState(window.HM.store.readCache());
   }
 
   function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify({ habit: state.habit, logged: state.logged, startDay: state.startDay }));
-    } catch (e) { /* storage blocked — keep running in memory */ }
+    window.HM.store.writeCache({
+      runId: state.runId,
+      habit: state.habit,
+      startDay: state.startDay,
+      logged: state.logged
+    });
+  }
+
+  function refreshFromServer() {
+    return window.HM.store.loadState().then(function (s) {
+      applyState(s);
+      save();
+      render();
+    }).catch(function () {
+      toast('Offline — zobrazujem poslednú známu verziu.');
+    });
   }
 
   /* ---------- derived ---------- */
@@ -180,12 +187,35 @@
       return;
     }
     var wasEditing = state.editing;
-    state.habit = v;
     state.editing = false;
-    if (!state.startDay) state.startDay = todayKey();   // day 1 is today
-    save();
-    render();
-    toast(wasEditing ? 'Saved.' : 'Sixty begins.');
+
+    // Premenovanie bežiacej výzvy — beh pokračuje, mení sa len názov.
+    // Keby to išlo cez startRun, server by bežiaci beh uzavrel a prišiel by
+    // o svoje dni.
+    if (wasEditing && state.runId) {
+      var previous = state.habit;
+      state.habit = v;
+      render();
+      window.HM.store.renameRun(state.runId, v).then(function () {
+        save();
+        toast('Saved.');
+      }).catch(function () {
+        state.habit = previous;
+        render();
+        toast('Nepodarilo sa premenovať. Skús znova.');
+      });
+      return;
+    }
+
+    // Nová výzva — server prípadný predchádzajúci beh uzavrie ako abandoned.
+    window.HM.store.startRun(v).then(function (s) {
+      applyState(s);
+      save();
+      render();
+      toast('Sixty begins.');
+    }).catch(function () {
+      toast('Nepodarilo sa začať. Skús znova.');
+    });
   }
 
   function edit() {
@@ -239,6 +269,22 @@
       clearTimeout(timers.milestone);
       timers.milestone = setTimeout(function () { state.milestone = 0; render(); }, 2600);
     }
+
+    // Zápis na server ide až po optimistickom vykreslení. Keď zlyhá, deň sa
+    // nesmie stratiť ticho — políčko sa vráti a povie sa to nahlas.
+    window.HM.store.setDay(state.runId, state.startDay, n, !wasDone)
+      .then(function (serverLogged) {
+        state.logged = serverLogged;
+        save();
+      })
+      .catch(function () {
+        state.logged = wasDone
+          ? state.logged.concat([n]).sort(function (a, b) { return a - b; })
+          : state.logged.filter(function (x) { return x !== n; });
+        save();
+        render();
+        toast('Nepodarilo sa uložiť. Skús znova.');
+      });
   }
 
   function markToday() {
@@ -255,16 +301,14 @@
     }
   }
 
+  // Beh sa už neruší mazaním — uzavrie ho až založenie nového (POST /api/runs),
+  // a tým sa dostane do histórie. Tu len uvoľníme obrazovku na zadanie nového
+  // habitu; kým ho nepotvrdíš, bežiaci beh sa nikde nemení.
   function reset() {
-    state.habit = '';
-    state.logged = [];
-    state.startDay = null;
-    state.editing = false;
+    state.editing = true;
     state.justN = 0;
     state.milestone = 0;
-    save();
     render();
-    toast('Cleared.');
   }
 
   /* ---------- hero panes ----------
@@ -676,9 +720,10 @@
     }, full ? 2000 : 1150);
   }
 
-  load();
+  load();          // cache — okamžité vykreslenie
   buildPaths();
   buildGrid();
   render();
   startIntro();
+  refreshFromServer();   // server — zdroj pravdy, prepíše cache
 })();
