@@ -93,11 +93,18 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 </div>
 <script type="module">
   import { initAuth, mountSignIn } from './auth.js';
-  initAuth().then(() => {
-    mountSignIn(document.getElementById('signIn'));
-  });
+  initAuth()
+    .then(() => {
+      mountSignIn(document.getElementById('signIn'));
+    })
+    .catch((err) => {
+      console.error('Auth init failed:', err);
+      document.getElementById('signIn').innerHTML =
+        '<p style="color:#F3F1ED;font-family:\'Schibsted Grotesk\',system-ui,-apple-system,sans-serif;max-width:22rem;text-align:center;line-height:1.5;margin:0">Prihlásenie sa nepodarilo načítať. Skontroluj internetové pripojenie a obnov stránku.</p>';
+    });
 </script>
 
+<div id="appRoot" inert aria-hidden="true">
 <nav id="topNav" style="position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)">
   <div id="navBg" style="position:absolute;inset:0;background:rgba(10,10,10,.72);opacity:0;transition:opacity 260ms cubic-bezier(.32,.72,0,1);pointer-events:none"></div>
   <div style="position:relative;z-index:2;max-width:940px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between">
@@ -256,6 +263,8 @@ body:not(.intro) .hero-pane.is-entering{animation:quietIn 440ms var(--ease) both
 </div>
 
 <div id="toast" role="status" aria-live="polite" style="position:fixed;left:50%;bottom:2rem;transform:translate(-50%,calc(100% + 3rem));background:#F3F1ED;color:#0A0A0A;font-size:.875rem;font-weight:500;padding:.5rem 1.125rem;border-radius:999px;z-index:100;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>
+
+</div>
 
 <script src="quotes.js"></script>
 <script src="app.js"></script>
